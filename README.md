@@ -1,6 +1,16 @@
 # app
 
-## Project setup
+### Install JSON Server
+```
+npm install -g json-server
+```
+
+### Start JSON Server
+```
+json-server --watch db.json
+```
+
+### Project setup
 ```
 npm install
 ```
@@ -20,5 +30,3 @@ npm run build
 npm run lint
 ```
 
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
