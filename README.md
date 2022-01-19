@@ -6,15 +6,15 @@
 npm install -g json-server
 ```
 ```
+npm install -g serve
+```
+```
 json-server --watch db.json
 ```
 
 ### В другом окне терминала ввести
 ```
 npm run build
-```
-```
-npm install -g serve
 ```
 ```
 serve -s dist -l 4000
