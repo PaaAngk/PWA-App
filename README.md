@@ -11,6 +11,9 @@ json-server --watch db.json
 
 ### В другом окне терминала ввести
 ```
+npm run build
+```
+```
 npm install -g serve
 ```
 ```
