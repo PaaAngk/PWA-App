@@ -1,33 +1,21 @@
 # app
-### Install Node js
+### Установить Node js, Visual Studio Code
 
-### Install JSON Server
+### В папке проекта вызвать терминал VS Code и ввести:
 ```
 npm install -g json-server
 ```
-
-### Start JSON Server
 ```
 json-server --watch db.json
 ```
 
-### Project setup
+### В другом окне терминала ввести
 ```
-npm install
+npm install -g serve
 ```
+```
+serve -s dist -l 4000
+```
+### Перейти по ссылке в терминале или http://localhost:4000/
 
-### Compiles and hot-reloads for development
-```
-npm run serve
-```
-
-### Compiles and minifies for production
-```
-npm run build
-```
-
-### Lints and fixes files
-```
-npm run lint
-```
 

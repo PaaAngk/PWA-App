@@ -27,7 +27,10 @@
           <button class="btn btn-info mb-3 w-25" v-bind:hidden="!idCandidateInEdit" @click="editCandidate()" type="button">Изменить</button>
         </form>
 
-        <table class="table table-hover">
+        <div v-if="candidates.length === 0" class="alert alert-danger" role="alert">
+            <b>Данные не загружены!</b>
+        </div>
+        <table v-else class="table table-hover">
             <thead>
               <tr>
                 <th scope="col" v-for="header in headersСandidats" :key="header.id">
@@ -41,11 +44,9 @@
                 </th>
               </tr>
             </thead>
+            
             <tbody>
-              <tr v-if="candidates.length === 0">
-                <td>No data</td>
-              </tr>
-              <tr v-else v-for="candidate in candidates" v-bind:class="{'table-danger': !candidate.valid }" :key="candidate.id">
+              <tr  v-for="candidate in candidates" v-bind:class="{'table-danger': !candidate.valid }" :key="candidate.id">
                 <td>{{candidate.firstName}}</td>
                 <td>{{candidate.secondName}}</td>
                 <td>{{candidate.lastName}}</td>
@@ -58,7 +59,7 @@
             </tbody>
         </table>
         
-        <button class="btn btn-primary mb-3 w-25" v-on:click="compareCandidate()" type="submit">Проверить</button>
+        <button v-if="candidates.length !== 0" class="btn btn-primary mb-3 w-25" v-on:click="compareCandidate()" type="submit">Проверить</button>
     </div>
 </template>
 <script>
@@ -120,21 +121,6 @@ export default {
             const response = await fetch('http://localhost:3000/ruirs');
             const data = await response.json();
             this.ruirs = data;
-            await fetch('http://localhost:3000/ruirs')
-            .then(async response => {
-                const data = await response.json();
-                if (!response.ok) {
-                    const error = (data && data.message) || response.status;
-                    return Promise.reject(error);
-                }
-                else{
-                    this.ruirs = data;
-                }
-            })
-            .catch(error => {
-                this.errorMessage = error;
-                console.error('Error get ruirs!', error);
-            }); 
         },
 
         // Добавлние нового кандидата, проверка заполненности полей и отлов ошибок при выполнение запроса
@@ -299,5 +285,5 @@ export default {
         },
     }
 
-}
+};
 </script>

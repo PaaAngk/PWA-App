@@ -10,13 +10,13 @@
       "placeLive": "г. Иркутск, ул. Ленина, д.10, кв. 3"
     },
     {
-      "id": 2,
       "secondName": "Петров",
       "firstName": "Петр",
       "lastName": "Иванович",
       "DOB": "15.06.1983",
       "placeBirth": "Ангарск",
-      "placeLive": "г. Ангарск, мкр. 10, д. 3, кв. 8"
+      "placeLive": "г. Ангарск, мкр. 10, д. 3, кв. 8",
+      "id": 2
     },
     {
       "id": 3,
@@ -35,15 +35,6 @@
       "placeBirth": "Наканно село",
       "placeLive": "Катангский район, Наканно село, улица Лесная 5, 1",
       "id": 4
-    },
-    {
-      "secondName": "sd",
-      "firstName": "dsf",
-      "lastName": "dsfds",
-      "DOB": "01.01.2000",
-      "placeBirth": "fsfs",
-      "placeLive": "dfgdfh",
-      "id": 5
     }
   ],
   "mobileVoter": [

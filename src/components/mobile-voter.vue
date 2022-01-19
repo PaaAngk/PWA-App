@@ -1,7 +1,10 @@
 <template>
     <div class="mobile-voter ">
         <h1>Мобильный избиратель</h1>
-        <table class="table table-hover">
+        <div v-if="mobileVoters.length === 0" class="alert alert-danger" role="alert">
+            <b>Данные не загружены!</b>
+        </div>
+        <table v-else class="table table-hover">
             <thead>
               <tr>
                 <th scope="col" v-for="header in headersMV" :key="header.id">
@@ -10,15 +13,13 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="mobileVoters.length === 0">
-                <td>No data</td>
-              </tr>
-              <tr v-else v-for="mobileVoter in mobileVoters" :key="mobileVoter.id">
+              <tr v-for="mobileVoter in mobileVoters" :key="mobileVoter.id">
                   <td v-for="voter in mobileVoter" :key="voter.id">{{voter}}</td>
               </tr>
             </tbody>
-        </table>
+        </table> 
     </div>
+    
 </template>
 <script>
 export default {
@@ -56,4 +57,5 @@ export default {
         },
     }
 }
+
 </script>

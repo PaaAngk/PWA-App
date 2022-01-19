@@ -2,7 +2,10 @@
     <div class="ruir container">
       
         <h1>РУИР</h1>
-        <table class="table table-hover">
+        <div v-if="ruirs.length === 0" class="alert alert-danger" role="alert">
+            <b>Данные не загружены!</b>
+        </div>
+        <table v-else class="table table-hover">
             <thead>
               <tr>
                 <th scope="col" v-for="header in headersСandidats" :key="header.id">
@@ -12,10 +15,8 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="ruirs.length === 0">
-                <td>No data</td>
-              </tr>
-              <tr v-else v-for="ruir in ruirs" :key="ruir.id">
+
+              <tr v-for="ruir in ruirs" :key="ruir.id">
                 <td>{{ruir.firstName}}</td>
                 <td>{{ruir.secondName}}</td>
                 <td>{{ruir.lastName}}</td>
