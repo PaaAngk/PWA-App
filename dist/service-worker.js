@@ -86,6 +86,11 @@ workbox.routing.registerRoute(
 
 
 
+self.addEventListener('push', (event) => {
+  self.registration.showNotification("Hello from the Service Worker!");
+  
+});
+
 let click_open_url;
 self.addEventListener("push", function(event){
     let pushMessage = event.data.text();
@@ -98,9 +103,8 @@ self.addEventListener("push", function(event){
         vibrate: [200, 100, 200, 100, 200, 100, 200],
         tag: 'vibration-sample'
     };
-    event.waitUntil(
-        self.regestration.showNotification("Pwa app notification", options)
-    );
+      self.registration.showNotification("Pwa app notification", options)
+
 });
 
 // function showNotification() {
