@@ -86,27 +86,22 @@ workbox.routing.registerRoute(
 
 
 
-self.addEventListener('push', (event) => {
-  self.registration.showNotification("Hello from the Service Worker!");
-  console.log(event);
+let click_open_url;
+self.addEventListener("push", function(event){
+    let pushMessage = event.data.text();
+    console.log(event);
+    click_open_url = "google.com";
+    const options = {
+        body: pushMessage.body,
+        icon: './img/android-chrome-192x192.png',
+        icon: './img/android-chrome-512x512.png',
+        vibrate: [200, 100, 200, 100, 200, 100, 200],
+        tag: 'vibration-sample'
+    };
+    event.waitUntil(
+        self.regestration.showNotification("Pwa app notification", options)
+    );
 });
-
-// let click_open_url;
-// self.addEventListener("push", function(event){
-//     let pushMessage = event.data.text();
-
-//     click_open_url = "google.com";
-//     const options = {
-//         body: pushMessage.body,
-//         icon: './img/android-chrome-192x192.png',
-//         icon: './img/android-chrome-512x512.png',
-//         vibrate: [200, 100, 200, 100, 200, 100, 200],
-//         tag: 'vibration-sample'
-//     };
-//     event.waitUntil(
-//         self.regestration.showNotification("Pwa app notification", options)
-//     );
-// });
 
 // function showNotification() {
 //   Notification.requestPermission(function(result) {
