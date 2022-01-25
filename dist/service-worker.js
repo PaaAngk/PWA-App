@@ -1,4 +1,4 @@
-importScripts("/precache-manifest.f4bc8e96c590e970917aed07d3e4e4b1.js", "https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
+importScripts("/precache-manifest.9db584d7263443c087ca21b2b74ed665.js", "https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
 
 workbox.setConfig({
   debug: true
@@ -12,7 +12,8 @@ workbox.precaching.precacheAndRoute(self.__precacheManifest, {});
 
 //Перезагузка всех окон для отображения новых данных
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
+  if (event.data.action === 'SKIP_WAITING') {
+    console.log(event.data);
     self.skipWaiting();
   }
 });
@@ -20,7 +21,7 @@ self.addEventListener('message', (event) => {
 
 workbox.routing.registerRoute(
   "http://localhost:3000/candidates",
-  new workbox.strategies.StaleWhileRevalidate({//StaleWhileRevalidate постоянно требует обновления
+  new workbox.strategies.StaleWhileRevalidate({
     cacheName: "app-candidates",
     plugins: [
       new workbox.broadcastUpdate.Plugin()
@@ -47,11 +48,48 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(bgSyncLogic());
 });
 
+self.addEventListener('sync', function(event) {
+	//console.log("sync event", event);
+  console.log("Данные отправлены!");
+  event.waitUntil(updateCandidate()); // sending sync request
+});
+
+function updateCandidate(){
+  const response = fetch('http://localhost:3000/candidates');
+  const cache = caches.open('app-candidates');
+  cache.put(response.url, response)
+}
 
 
 
+//periodic sync
+self.addEventListener('periodicsync', (event) => {
+  if (event.tag === 'ruir-bgsync') {
+    console.log('Fetching ruir in the background!');
+    event.waitUntil(updateRuirs());
+  }
+});
+
+async function updateRuirs() {
+  const response = await fetch('http://localhost:3000/ruirs');
+  //console.log(await response.json());
+  const ruirsCache = await caches.open('ruirs');
+  ruirsCache.put(response.url, response)
+};
+
+workbox.routing.registerRoute(
+  "http://localhost:3000/ruirs",
+  new workbox.strategies.CacheFirst({
+    cacheName: "ruirs"
+  })
+);
 
 
+
+self.addEventListener('push', (event) => {
+  self.registration.showNotification("Hello from the Service Worker!");
+  console.log(event);
+});
 
 // let click_open_url;
 // self.addEventListener("push", function(event){

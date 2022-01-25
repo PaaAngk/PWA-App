@@ -159,7 +159,9 @@ export default {
             })
             .catch(error => {
                 this.errorMessage = error;
-                console.error('Error create a new candidate!', error);
+                console.log("Данные сохранены для отправки при появлении сети");
+                this.updateAfterFetch();
+                //console.error('Error create a new candidate!', error);
             });
 
         },
