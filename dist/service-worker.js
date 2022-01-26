@@ -1,4 +1,4 @@
-importScripts("/precache-manifest.9db584d7263443c087ca21b2b74ed665.js", "https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
+importScripts("/precache-manifest.337f131091338bbcc459465dcfec2abf.js", "https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
 
 workbox.setConfig({
   debug: true
@@ -13,7 +13,6 @@ workbox.precaching.precacheAndRoute(self.__precacheManifest, {});
 //Перезагузка всех окон для отображения новых данных
 self.addEventListener('message', (event) => {
   if (event.data.action === 'SKIP_WAITING') {
-    console.log(event.data);
     self.skipWaiting();
   }
 });
@@ -32,14 +31,16 @@ workbox.routing.registerRoute(
 //Такие запросы записываются в IndexedDB и извлекаются из нее при восстановлении соединения.
 const queue = new workbox.backgroundSync.Queue('QueuePWA') // использоваться для хранения провалившихся запросов
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'POST') {
+  if (event.request.method === 'GET') {
     return;
   }
+  
   const bgSyncLogic = async () => {
     try {
       const response = await fetch(event.request.clone());
       return response;
     } catch (error) {
+      self.registration.showNotification("Данные сохранены для отправки при появлении сети!");
       await queue.pushRequest({request: event.request});
       return error;
     }
@@ -49,18 +50,16 @@ self.addEventListener('fetch', (event) => {
 });
 
 self.addEventListener('sync', function(event) {
-	//console.log("sync event", event);
-  console.log("Данные отправлены!");
-  event.waitUntil(updateCandidate()); // sending sync request
+  self.registration.showNotification("Данные отправлены! Обновите страницу.");
+  setTimeout(event.waitUntil(updateCandidate()), 10000);
 });
 
-function updateCandidate(){
-  const response = fetch('http://localhost:3000/candidates');
-  const cache = caches.open('app-candidates');
-  cache.put(response.url, response)
+async function updateCandidate(){
+  console.log("updateCandidate");
+  const response = await fetch('http://localhost:3000/candidates');
+  const cacheC = await caches.open('app-candidates');
+  cacheC.put(response.url, response)
 }
-
-
 
 //periodic sync
 self.addEventListener('periodicsync', (event) => {
@@ -71,12 +70,17 @@ self.addEventListener('periodicsync', (event) => {
 });
 
 async function updateRuirs() {
-  const response = await fetch('http://localhost:3000/ruirs');
-  //console.log(await response.json());
-  const ruirsCache = await caches.open('ruirs');
-  ruirsCache.put(response.url, response)
+  try{
+    const response = await fetch('http://localhost:3000/ruirs');
+    const ruirsCache = await caches.open('ruirs');
+    ruirsCache.put(response.url, response);
+    self.registration.showNotification("Записи РУИР синхронизированы!")
+  }
+  catch{
+    console.log("Нет сети для синхронизациии РУИР")
+  }
+  
 };
-
 workbox.routing.registerRoute(
   "http://localhost:3000/ruirs",
   new workbox.strategies.CacheFirst({
@@ -85,27 +89,37 @@ workbox.routing.registerRoute(
 );
 
 
-
 self.addEventListener('push', (event) => {
   self.registration.showNotification("Hello from the Service Worker!");
-  
 });
 
-let click_open_url;
-self.addEventListener("push", function(event){
-    let pushMessage = event.data.text();
-    console.log(event);
-    click_open_url = "google.com";
-    const options = {
-        body: pushMessage.body,
-        icon: './img/android-chrome-192x192.png',
-        icon: './img/android-chrome-512x512.png',
-        vibrate: [200, 100, 200, 100, 200, 100, 200],
-        tag: 'vibration-sample'
-    };
-      self.registration.showNotification("Pwa app notification", options)
+self.addEventListener('notificationclick', function (event) {
+  console.log('On notification click: ', event.notification.tag);
+  event.notification.close();
 
+  event.waitUntil(clients.matchAll({
+      type: 'window'
+  }).then(function (clientList) {
+      for (var i = 0; i < clientList.length; i++) {
+          var client = clientList[i];
+          if (client.url == 'http://localhost:4000/' && 'focus' in client)
+              return client.focus();
+      }
+      if (clients.openWindow)
+          return clients.openWindow('/');
+  }));
 });
+
+
+// let click_open_url;
+// self.addEventListener("push", function(event){
+//     let pushMessage = event.data.text();
+//     click_open_url = "google.com";
+//     const options = {
+//         body: pushMessage.body, 
+//     };
+//     self.registration.showNotification("Pwa app notification", options)
+// });
 
 // function showNotification() {
 //   Notification.requestPermission(function(result) {
@@ -123,11 +137,4 @@ self.addEventListener("push", function(event){
 // }
 
 
-// self.addEventListener("notificationclick", function(event){
-//     const clickedNot = event.showNotification;
-//     clickedNot.close();
-//     if(click_open_url){
-//         const promiseChain = clients.openWindow(click_open_url);
-//         event.waitUntil(promiseChain);
-//     }
-// });
+

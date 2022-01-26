@@ -13,21 +13,14 @@ if (process.env.NODE_ENV === 'production') {
       Notification.requestPermission(function(status){
         console.log("Status ", status);
       });
-      if ("Notification" in window) {
-        console.log("The Notifications API is supported");
-      }
       registerPeriodicRuirCheck();
       async function registerPeriodicRuirCheck() {
         const registration = await navigator.serviceWorker.ready;
-        try {
+        
           await registration.periodicSync.register('ruir-bgsync', {
             minInterval: 24 * 60 * 60 * 1000,
-          });
-        } catch {
-          console.log('Periodic Sync could not be registered!');
-        }
+          });  
       }
-  
     },
     registered () {
       console.log('Service worker has been registered.')
@@ -41,7 +34,7 @@ if (process.env.NODE_ENV === 'production') {
     updated (registration) {
       console.log('New content is available; please refresh.');
 
-      if (window.confirm("A new version is available, update now?")) {
+      if (window.confirm("Доступна новая версия, применить?")) {
         const worker = registration.waiting;
         worker.postMessage({ action: "SKIP_WAITING" });
       }
