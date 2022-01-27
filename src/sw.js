@@ -86,12 +86,17 @@ async function updateMobileVoter() {
     const MVCache = await caches.open('mobileVoter');
     MVCache.put(response.url, response);
     self.registration.showNotification("Записи мобильный избиратель синхронизированы!")
+
+    const channel = new BroadcastChannel('sw-messages');
+    channel.postMessage({title: 'MV'});
   }
   catch{
+    console.log(error);
     self.registration.showNotification("Нет сети для загрузки мобильный избиратель!")
   }
   
 };
+
 
 
 

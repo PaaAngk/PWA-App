@@ -1,4 +1,4 @@
-importScripts("/precache-manifest.5cea39a114458ec97a85f1171323cf8e.js", "https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
+importScripts("/precache-manifest.cd63f8b43ca2cb6f63e8a3344cb112db.js", "https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
 
 workbox.setConfig({
   debug: true
@@ -88,12 +88,17 @@ async function updateMobileVoter() {
     const MVCache = await caches.open('mobileVoter');
     MVCache.put(response.url, response);
     self.registration.showNotification("Записи мобильный избиратель синхронизированы!")
+
+    const channel = new BroadcastChannel('sw-messages');
+    channel.postMessage({title: 'MV'});
   }
   catch{
+    console.log(error);
     self.registration.showNotification("Нет сети для загрузки мобильный избиратель!")
   }
   
 };
+
 
 
 

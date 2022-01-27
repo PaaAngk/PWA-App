@@ -194,6 +194,7 @@ export default {
                 try {
                     await fetch(`http://localhost:3000/candidates/${id}`, { method: "delete" });
                     //this.getСandidats();
+                    fetch('http://localhost:3000/candidates');
                 } catch (error) {
                     console.error('Error in delete candidate!', error);
                     this.deleteResult = error.message;
@@ -247,6 +248,9 @@ export default {
                     }
                 }
             }
+            this.ruirs = [...new Set(this.ruirs)];
+
+            localStorage.setItem('riur', JSON.stringify(this.ruirs))
             //console.log(this.ruirs);
         },
 
@@ -311,7 +315,8 @@ export default {
             this.candidates[objIndex].secondName = this.secondName;
             this.candidates[objIndex].DOB = this.DOB;
             this.candidates[objIndex].placeBirth = this.placeBirth;
-            this.candidates[objIndex].placeLive = this.placeLive;   
+            this.candidates[objIndex].placeLive = this.placeLive;
+            this.candidates[objIndex].valid = 1;
 
             const requestOptions = {
                 method: 'PUT',

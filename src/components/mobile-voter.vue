@@ -1,5 +1,5 @@
 <template>
-    <div class="mobile-voter ">
+    <div class="mobile-voter container-fluid">
         <h1>Мобильный избиратель</h1>
         <div v-if="noData" class="alert alert-danger" role="alert">
             <b>Данные не загружены!</b>
@@ -51,6 +51,14 @@ export default {
     },
     mounted() {
       this.getMV();
+
+      const channel = new BroadcastChannel('sw-messages');
+      channel.addEventListener('message', event => {         
+          if(event.data.title === "MV"){
+              this.getMV();
+          }
+      }); 
+
     },
     //Изменение title в зависимости от страницы
     watch: {

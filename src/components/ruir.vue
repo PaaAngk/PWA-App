@@ -5,7 +5,7 @@
         <div v-if="noData" class="alert alert-danger" role="alert">
             <b>Данные не загружены!</b>
         </div>
-        <table v-else class="table table-hover">
+        <table v-if="ruirs.length !== 0" class="table table-hover">
             <thead>
               <tr>
                 <th scope="col" v-for="header in headersСandidats" :key="header.id">
@@ -45,14 +45,8 @@ export default {
     methods: {
         //Получение данных из РУИР
         async getRuirs(){
-          try{
-            const response = await fetch('http://localhost:3000/ruirs');
-            const data = await response.json();
-            this.ruirs = data;
-          }
-          catch{
-            this.noData = true
-          }
+            var riur = localStorage.getItem('riur');
+            this.ruirs = JSON.parse(riur)
         }
     },
     mounted() {
