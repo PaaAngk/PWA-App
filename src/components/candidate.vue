@@ -335,7 +335,7 @@ export default {
                 this.errorMessage = error;
                 console.error('Error edit a candidate!', error);
             });
-
+            this.checkRiurInCache();
             
         },
 
