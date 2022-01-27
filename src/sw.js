@@ -29,10 +29,23 @@ workbox.routing.registerRoute(
 //Такие запросы записываются в IndexedDB и извлекаются из нее при восстановлении соединения.
 const queue = new workbox.backgroundSync.Queue('QueuePWA') // использоваться для хранения провалившихся запросов
 self.addEventListener('fetch', (event) => {
+  if (event.request.url === 'http://localhost:3000/mobileVoter') {
+    event.respondWith(async function() {
+      const cache = await caches.open('mobileVoter');
+      const cachedResponse = await cache.match(event.request);
+      if (cachedResponse) return cachedResponse;
+      const networkResponse = await fetch(event.request);
+      /*event.waitUntil(
+        cache.put(event.request, networkResponse.clone())
+      );*/
+      return networkResponse;
+    }());  
+  }
+  
   if (event.request.method === 'GET') {
     return;
   }
-  
+
   const bgSyncLogic = async () => {
     try {
       const response = await fetch(event.request.clone());
@@ -48,43 +61,38 @@ self.addEventListener('fetch', (event) => {
 });
 
 self.addEventListener('sync', function(event) {
-  self.registration.showNotification("Данные отправлены! Обновите страницу.");
-  setTimeout(event.waitUntil(updateCandidate()), 10000);
+  self.registration.showNotification("Данные отправлены!");
+  event.waitUntil(updateCandidate());
 });
 
 async function updateCandidate(){
-  console.log("updateCandidate");
   const response = await fetch('http://localhost:3000/candidates');
   const cacheC = await caches.open('app-candidates');
   cacheC.put(response.url, response)
 }
 
+
 //periodic sync
 self.addEventListener('periodicsync', (event) => {
-  if (event.tag === 'ruir-bgsync') {
-    console.log('Fetching ruir in the background!');
-    event.waitUntil(updateRuirs());
+  if (event.tag === 'mobileVoter-bgsync') {
+    console.log('Fetching mobile voter in the background!');
+    event.waitUntil(updateMobileVoter());
   }
 });
 
-async function updateRuirs() {
+async function updateMobileVoter() {
   try{
-    const response = await fetch('http://localhost:3000/ruirs');
-    const ruirsCache = await caches.open('ruirs');
-    ruirsCache.put(response.url, response);
-    self.registration.showNotification("Записи РУИР синхронизированы!")
+    const response = await fetch('http://localhost:3000/mobileVoter');
+    const MVCache = await caches.open('mobileVoter');
+    MVCache.put(response.url, response);
+    self.registration.showNotification("Записи мобильный избиратель синхронизированы!")
   }
   catch{
-    console.log("Нет сети для синхронизациии РУИР")
+    self.registration.showNotification("Нет сети для загрузки мобильный избиратель!")
   }
   
 };
-workbox.routing.registerRoute(
-  "http://localhost:3000/ruirs",
-  new workbox.strategies.CacheFirst({
-    cacheName: "ruirs"
-  })
-);
+
 
 
 self.addEventListener('push', (event) => {
@@ -92,7 +100,6 @@ self.addEventListener('push', (event) => {
 });
 
 self.addEventListener('notificationclick', function (event) {
-  console.log('On notification click: ', event.notification.tag);
   event.notification.close();
 
   event.waitUntil(clients.matchAll({

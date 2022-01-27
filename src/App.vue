@@ -11,6 +11,7 @@ export default {
     mainWrapper
   }
 }
+
 </script> 
 
 <style>

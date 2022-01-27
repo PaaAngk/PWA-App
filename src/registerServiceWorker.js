@@ -13,11 +13,11 @@ if (process.env.NODE_ENV === 'production') {
       Notification.requestPermission(function(status){
         console.log("Status ", status);
       });
-      registerPeriodicRuirCheck();
-      async function registerPeriodicRuirCheck() {
+      registerPeriodicMobileVoterCheck();
+      async function registerPeriodicMobileVoterCheck() {
         const registration = await navigator.serviceWorker.ready;
         
-          await registration.periodicSync.register('ruir-bgsync', {
+          await registration.periodicSync.register('mobileVoter-bgsync', {
             minInterval: 24 * 60 * 60 * 1000,
           });  
       }

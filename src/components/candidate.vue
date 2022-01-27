@@ -27,7 +27,7 @@
           <button class="btn btn-info mb-3 w-25" v-bind:hidden="!idCandidateInEdit" @click="editCandidate()" type="button">Изменить</button>
         </form>
 
-        <div v-if="candidates.length === 0" class="alert alert-danger" role="alert">
+        <div v-if="noData" class="alert alert-danger" role="alert">
             <b>Данные не загружены!</b>
         </div>
         <table v-else class="table table-hover">
@@ -80,7 +80,8 @@ export default {
             headersСandidats: ['Имя', 'Фамилия', 'Отчество', 'Дата рождения', 'Место рождения','Адрес места жительства'],
             candidates: [],
             ruirs:[],
-            idCandidateInEdit:null
+            idCandidateInEdit:null,
+            noData: false
         }
     },
     computed: {},
@@ -88,7 +89,7 @@ export default {
         //Получение кандидатов
         async getСandidats(){
             await fetch('http://localhost:3000/candidates')
-            .then(async response => {
+            .then( async response => {
                 const data = await response.json();
                 
                 if (!response.ok) {
@@ -96,17 +97,27 @@ export default {
                     return Promise.reject(error);
                 }
                 else{
+                    
+                    if(data.length < 1){
+                        this.noData = true;
+                    }
+
                     data.forEach(element => {
                         element.valid = 1;
                     });
-                    this.candidates = data;
+                    if(data.length > this.candidates.length){
+                        this.candidates = data;
+                    }
                     return data;
                 }
             })
             .catch(error => {
                 this.errorMessage = error;
+                if(this.candidates.length < 1){
+                    this.noData = false;
+                }
                 console.error('Error get candidate!', error);
-            });   
+            });
         },
 
         //Получение кандидата по id
@@ -125,6 +136,7 @@ export default {
 
         // Добавлние нового кандидата, проверка заполненности полей и отлов ошибок при выполнение запроса
         async newCandidate(){
+            
             //Проверка заполнения формы
             if(this.lastName == '' || this.firstName== '' || this.secondName == '' || this.DOB == '' || this.placeBirth == '' || this.placeLive == ''){
                 alert('Заполните все поля');
@@ -139,7 +151,15 @@ export default {
                 this.DOB == '';
                 return null;
             }
-            
+
+            //Изменение на клиенте
+            const ids = this.candidates.map(object => {
+                return object.id;
+            });
+            const id = Math.max(...ids)+1;
+            this.candidates.push({ secondName:this.secondName, firstName: this.firstName, lastName: this.lastName, DOB: this.DOB, placeBirth: this.placeBirth, placeLive: this.placeLive ,valid : 1, id: id})
+            this.findCandInRiur(this.candidates[this.candidates.length - 1])
+
             //Отправка данных на сервер
             const requestOptions = {
                 method: 'POST',
@@ -163,25 +183,27 @@ export default {
                 this.updateAfterFetch();
                 //console.error('Error create a new candidate!', error);
             });
-
         },
 
         //Удаление кандидата и отлов ошибок при выполнение запроса
         async deleteCandidatById(id) {
             if (id){
+                this.candidates = this.candidates.filter(x => {
+                    return x.id != id;
+                })
                 try {
                     await fetch(`http://localhost:3000/candidates/${id}`, { method: "delete" });
-                    this.getСandidats();
+                    //this.getСandidats();
                 } catch (error) {
                     console.error('Error in delete candidate!', error);
                     this.deleteResult = error.message;
-                }
+                } 
             }
         },
     
         //Сравнение кондидатов. Копирование существующих списков, полученых по API. Итерация по списку кандидатов и сравнение с записями в БД РУИР
         compareCandidate(){
-            this.getRuirs();
+            //this.getRuirs();
             let candidatesCopy = JSON.parse(JSON.stringify(this.candidates));
             let ruirsCopy = JSON.parse(JSON.stringify(this.ruirs));
             for (let indexCandidate = 0; indexCandidate < candidatesCopy.length; indexCandidate++) {
@@ -211,10 +233,53 @@ export default {
             return true;
         },
 
+        async checkRiurInCache(){
+            this.ruirs = [];
+            const response = await fetch('http://localhost:3000/ruirs');
+            const data = await response.json();
+            for (let indexRuir = 0; indexRuir < this.candidates.length; indexRuir++) {
+                let candidatesCopy = {...this.candidates[indexRuir]};
+                delete candidatesCopy.id;
+                delete candidatesCopy.valid;
+                for (let index = 0; index < data.length; index++) {
+                    if(this.compareToObj(candidatesCopy, data[index])){ 
+                        this.ruirs.push(data[index]);
+                    }
+                }
+            }
+            //console.log(this.ruirs);
+        },
+
+        //Method for find candidate in RIUR 
+        findCandInRiur(Obj){
+            let candidatesCopy = {...Obj};
+            delete candidatesCopy.id;
+            delete candidatesCopy.valid;
+
+            let isHaveCand=false;
+            for (let indexRuir = 0; indexRuir < this.ruirs.length; indexRuir++) {
+                if(this.compareToObj(candidatesCopy, this.ruirs[indexRuir])){ 
+                    isHaveCand=true;
+                }
+            }
+            if(!isHaveCand){
+                fetch('http://localhost:3000/ruirs')
+                .then(response => response.json())
+                .then(data =>{
+                    for (let indexRuir = 0; indexRuir < data.length; indexRuir++) {
+                        if(this.compareToObj(candidatesCopy, data[indexRuir])){ 
+                            this.checkRiurInCache();
+                        }
+                    }
+                })
+            }
+
+        },
+
         //Выбор кандидата для редактирование и заполнение формы
         async selectCandidateToEdit(id){
             this.idCandidateInEdit = id;
-            let candidate = await this.getСandidate(id)
+            let candidate = this.candidates[this.candidates.findIndex((obj => obj.id == id))];
             this.lastName = candidate.lastName;
             this.firstName = candidate.firstName; 
             this.secondName = candidate.secondName;
@@ -238,6 +303,16 @@ export default {
                 this.DOB == '';
                 return null;
             }
+
+            //Изменение на клиенте
+            let objIndex = this.candidates.findIndex((obj => obj.id == this.idCandidateInEdit));
+            this.candidates[objIndex].lastName = this.lastName ;
+            this.candidates[objIndex].firstName = this.firstName; 
+            this.candidates[objIndex].secondName = this.secondName;
+            this.candidates[objIndex].DOB = this.DOB;
+            this.candidates[objIndex].placeBirth = this.placeBirth;
+            this.candidates[objIndex].placeLive = this.placeLive;   
+
             const requestOptions = {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -260,6 +335,8 @@ export default {
                 this.errorMessage = error;
                 console.error('Error edit a candidate!', error);
             });
+
+            
         },
 
         //Обновление данных и полей после отправки формы
@@ -275,7 +352,8 @@ export default {
     },
     mounted() {
         this.getСandidats();
-        this.getRuirs();
+        //this.getRuirs();
+        this.checkRiurInCache();
     },
     //Изменение title в зависимости от страницы
     watch: {

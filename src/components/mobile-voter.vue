@@ -1,7 +1,7 @@
 <template>
     <div class="mobile-voter ">
         <h1>Мобильный избиратель</h1>
-        <div v-if="mobileVoters.length === 0" class="alert alert-danger" role="alert">
+        <div v-if="noData" class="alert alert-danger" role="alert">
             <b>Данные не загружены!</b>
         </div>
         <table v-else class="table table-hover">
@@ -30,18 +30,23 @@ export default {
     data() {
         return{
           headersMV: [],
-          mobileVoters:[]
+          mobileVoters:[],
+          noData: false
         }
     },
     computed: {},
     methods: {
         //Получение данных мобильный избератель 
         async getMV(){
-          const response = await fetch('http://localhost:3000/mobileVoter')
-          const data = await response.json();
-          this.headersMV = Object.keys(data[0]);
-          this.mobileVoters = data;
-          
+          try{
+            const response = await fetch('http://localhost:3000/mobileVoter')
+            const data = await response.json();
+            this.headersMV = Object.keys(data[0]);
+            this.mobileVoters = data;
+          }
+          catch{
+            this.noData = true
+          }
         }
     },
     mounted() {

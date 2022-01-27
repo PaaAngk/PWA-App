@@ -1,8 +1,8 @@
 <template>
     <div class="ruir container">
       
-        <h1>РУИР</h1>
-        <div v-if="ruirs.length === 0" class="alert alert-danger" role="alert">
+        <h1>РИУР</h1>
+        <div v-if="noData" class="alert alert-danger" role="alert">
             <b>Данные не загружены!</b>
         </div>
         <table v-else class="table table-hover">
@@ -37,16 +37,22 @@ export default {
     data() {
         return{
           headersСandidats: ['Имя', 'Фамилия', 'Отчество', 'Дата рождения', 'Место рождения','Адрес места жительства'],
-          ruirs:[]
+          ruirs:[],
+          noData: false
         }
     },
     computed: {},
     methods: {
         //Получение данных из РУИР
         async getRuirs(){
+          try{
             const response = await fetch('http://localhost:3000/ruirs');
             const data = await response.json();
             this.ruirs = data;
+          }
+          catch{
+            this.noData = true
+          }
         }
     },
     mounted() {
