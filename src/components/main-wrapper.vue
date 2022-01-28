@@ -10,7 +10,7 @@
                          <router-link to="/" class="nav-link" exact active-class="active">Проверка кандидатов</router-link>
                     </li>
                     <li class="nav-item">
-                        <router-link to="/ruir" class="nav-link" exact active-class="active">РИУР</router-link>
+                        <router-link to="/riur" class="nav-link" exact active-class="active">РИУР</router-link>
                     </li>
                     <li class="nav-item">
                         <router-link to="/mobile-voter" class="nav-link" exact active-class="active">Мобильный избиратель</router-link>
@@ -37,14 +37,43 @@ export default {
     props:{},
     data() {
         return{
-            seenOffline: false
+            seenOffline: false,
+            riurs: []
         }
     },
     computed: {
         
     },
     methods: {
-        
+        removeDuplicates(arr) {
+            const result = [];
+            const duplicatesIndices = [];
+            arr.forEach((current, index) => {
+                if (duplicatesIndices.includes(index)) return;
+                result.push(current);
+            
+                for (let comparisonIndex = index + 1; comparisonIndex < arr.length; comparisonIndex++) {
+                    const comparison = arr[comparisonIndex];
+                    const currentKeys = Object.keys(current);
+                    const comparisonKeys = Object.keys(comparison);
+                    if (currentKeys.length !== comparisonKeys.length) continue;
+                    const currentKeysString = currentKeys.sort().join("").toLowerCase();
+                    const comparisonKeysString = comparisonKeys.sort().join("").toLowerCase();
+                    if (currentKeysString !== comparisonKeysString) continue;
+                    let valuesEqual = true;
+                    for (let i = 0; i < currentKeys.length; i++) {
+                        const key = currentKeys[i];
+                        if ( current[key] !== comparison[key] ) {
+                            valuesEqual = false;
+                            break;
+                        }
+                    }
+                    if (valuesEqual) duplicatesIndices.push(comparisonIndex);
+                } 
+            });  
+            return result;
+        }
+
     },
     mounted() {
         window.addEventListener('offline', () => {
@@ -53,6 +82,24 @@ export default {
         window.addEventListener('online', () => {
             this.seenOffline = false;
         }); 
+
+        const channel = new BroadcastChannel('sw-messages');
+        channel.addEventListener('message', event => {         
+            if(event.data.title === "updateRiur"){
+                let riur = JSON.parse(localStorage.getItem('riur'));
+                let riurCheck = event.data.body;
+                if(riur === null){
+                    riur = riurCheck;
+                }
+                else{
+                    riur = riurCheck.concat(riur);
+                }
+                let riurs = this.removeDuplicates(riur);
+                //console.log(riurs);
+                localStorage.setItem('riur', JSON.stringify(riurs));
+            }
+        }); 
+        
     }
 }
 </script>

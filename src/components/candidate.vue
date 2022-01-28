@@ -42,6 +42,9 @@
                 <th scope="col" width="10px">
                   
                 </th>
+                <th scope="col" width="10px">
+                  
+                </th>
               </tr>
             </thead>
             
@@ -53,13 +56,13 @@
                 <td>{{candidate.DOB}}</td>
                 <td>{{candidate.placeBirth}}</td>
                 <td>{{candidate.placeLive}}</td>
+                <td><button type="button" class="btn btn-primary" v-on:click="checkInRiur(candidate.id)">Проверить</button></td>
                 <td><button type="button" class="btn btn-info" v-on:click="selectCandidateToEdit(candidate.id)">Изменить</button></td>
                 <td><button type="button" class="btn btn-danger" v-on:click="deleteCandidatById(candidate.id)">Удалить</button></td>
               </tr>
             </tbody>
         </table>
         
-        <button v-if="candidates.length !== 0" class="btn btn-primary mb-3 w-25" v-on:click="compareCandidate()" type="submit">Проверить</button>
     </div>
 </template>
 <script>
@@ -79,7 +82,7 @@ export default {
             placeLive:"",
             headersСandidats: ['Имя', 'Фамилия', 'Отчество', 'Дата рождения', 'Место рождения','Адрес места жительства'],
             candidates: [],
-            ruirs:[],
+            riurs:[],
             idCandidateInEdit:null,
             noData: false
         }
@@ -105,6 +108,7 @@ export default {
                     data.forEach(element => {
                         element.valid = 1;
                     });
+
                     if(data.length > this.candidates.length){
                         this.candidates = data;
                     }
@@ -120,23 +124,8 @@ export default {
             });
         },
 
-        //Получение кандидата по id
-        async getСandidate(id){
-            const response = await fetch(`http://localhost:3000/candidates/${id}`);
-            const data = await response.json();
-            return data;
-        },
-
-        //Получение данных из РУИР
-        async getRuirs(){
-            const response = await fetch('http://localhost:3000/ruirs');
-            const data = await response.json();
-            this.ruirs = data;
-        },
-
         // Добавлние нового кандидата, проверка заполненности полей и отлов ошибок при выполнение запроса
         async newCandidate(){
-            
             //Проверка заполнения формы
             if(this.lastName == '' || this.firstName== '' || this.secondName == '' || this.DOB == '' || this.placeBirth == '' || this.placeLive == ''){
                 alert('Заполните все поля');
@@ -158,7 +147,6 @@ export default {
             });
             const id = Math.max(...ids)+1;
             this.candidates.push({ secondName:this.secondName, firstName: this.firstName, lastName: this.lastName, DOB: this.DOB, placeBirth: this.placeBirth, placeLive: this.placeLive ,valid : 1, id: id})
-            this.findCandInRiur(this.candidates[this.candidates.length - 1])
 
             //Отправка данных на сервер
             const requestOptions = {
@@ -178,10 +166,8 @@ export default {
                 }
             })
             .catch(error => {
-                this.errorMessage = error;
-                console.log("Данные сохранены для отправки при появлении сети");
                 this.updateAfterFetch();
-                //console.error('Error create a new candidate!', error);
+                console.error('Error create a new candidate!', error);
             });
         },
 
@@ -193,33 +179,11 @@ export default {
                 })
                 try {
                     await fetch(`http://localhost:3000/candidates/${id}`, { method: "delete" });
-                    //this.getСandidats();
                     fetch('http://localhost:3000/candidates');
                 } catch (error) {
                     console.error('Error in delete candidate!', error);
                     this.deleteResult = error.message;
                 } 
-            }
-        },
-    
-        //Сравнение кондидатов. Копирование существующих списков, полученых по API. Итерация по списку кандидатов и сравнение с записями в БД РУИР
-        compareCandidate(){
-            //this.getRuirs();
-            let candidatesCopy = JSON.parse(JSON.stringify(this.candidates));
-            let ruirsCopy = JSON.parse(JSON.stringify(this.ruirs));
-            for (let indexCandidate = 0; indexCandidate < candidatesCopy.length; indexCandidate++) {
-                delete candidatesCopy[indexCandidate].id;
-                delete candidatesCopy[indexCandidate].valid;
-                let resultCompare = false;
-                for (let indexRuir = 0; indexRuir < ruirsCopy.length; indexRuir++) {
-                    if(this.compareToObj(candidatesCopy[indexCandidate], ruirsCopy[indexRuir])){ 
-                        resultCompare = true;
-                        break; 
-                    }
-                }
-                if(!resultCompare){
-                    this.candidates[indexCandidate].valid = 0;
-                }
             }
         },
 
@@ -234,50 +198,36 @@ export default {
             return true;
         },
 
-        async checkRiurInCache(){
-            this.ruirs = [];
-            const response = await fetch('http://localhost:3000/ruirs');
-            const data = await response.json();
-            for (let indexRuir = 0; indexRuir < this.candidates.length; indexRuir++) {
-                let candidatesCopy = {...this.candidates[indexRuir]};
-                delete candidatesCopy.id;
-                delete candidatesCopy.valid;
-                for (let index = 0; index < data.length; index++) {
-                    if(this.compareToObj(candidatesCopy, data[index])){ 
-                        this.ruirs.push(data[index]);
-                    }
-                }
-            }
-            this.ruirs = [...new Set(this.ruirs)];
-
-            localStorage.setItem('riur', JSON.stringify(this.ruirs))
-            //console.log(this.ruirs);
-        },
-
-        //Method for find candidate in RIUR 
-        findCandInRiur(Obj){
-            let candidatesCopy = {...Obj};
+        //Проверка кандидата сначала по сохранненой РИУР, затем на сервере 
+        checkInRiur(id){
+            let candidatesCopy = {...this.candidates[this.candidates.findIndex((obj => obj.id == id))]};
             delete candidatesCopy.id;
             delete candidatesCopy.valid;
-
-            let isHaveCand=false;
-            for (let indexRuir = 0; indexRuir < this.ruirs.length; indexRuir++) {
-                if(this.compareToObj(candidatesCopy, this.ruirs[indexRuir])){ 
-                    isHaveCand=true;
+            let riur = JSON.parse(localStorage.getItem('riur'));
+            let notFindInRiur = true;
+            
+            if(riur !== null){
+                for (let indexRiur = 0; indexRiur < riur.length; indexRiur++) {
+                    if(this.compareToObj(candidatesCopy, riur[indexRiur])){ 
+                        notFindInRiur = false;
+                        break;
+                    }
                 }
             }
-            if(!isHaveCand){
-                fetch('http://localhost:3000/ruirs')
-                .then(response => response.json())
-                .then(data =>{
-                    for (let indexRuir = 0; indexRuir < data.length; indexRuir++) {
-                        if(this.compareToObj(candidatesCopy, data[indexRuir])){ 
-                            this.checkRiurInCache();
-                        }
-                    }
-                })
-            }
 
+            if(notFindInRiur){
+                fetch(`http://localhost:3000/riurs?secondName=${candidatesCopy.secondName}&firstName=${candidatesCopy.firstName}&lastName=${candidatesCopy.lastName}&DOB=${candidatesCopy.DOB}&placeBirth=${candidatesCopy.placeBirth}`)
+                .then(async response => {
+                    let data = await response.json();
+                    if (data.length !== 0) {
+                        const channel = new BroadcastChannel('sw-messages');
+                        channel.postMessage({title: 'updateRiur', body: data});
+                    }
+                    else{
+                        this.candidates[this.candidates.findIndex((obj => obj.id == id))].valid = 0;
+                    }
+                });
+            }
         },
 
         //Выбор кандидата для редактирование и заполнение формы
@@ -340,7 +290,6 @@ export default {
                 this.errorMessage = error;
                 console.error('Error edit a candidate!', error);
             });
-            this.checkRiurInCache();
             
         },
 
@@ -357,8 +306,6 @@ export default {
     },
     mounted() {
         this.getСandidats();
-        //this.getRuirs();
-        this.checkRiurInCache();
     },
     //Изменение title в зависимости от страницы
     watch: {

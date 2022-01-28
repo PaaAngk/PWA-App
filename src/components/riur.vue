@@ -1,11 +1,11 @@
 <template>
-    <div class="ruir container">
+    <div class="riur container">
       
         <h1>РИУР</h1>
         <div v-if="noData" class="alert alert-danger" role="alert">
-            <b>Данные не загружены!</b>
+            <b>Нет записей!</b>
         </div>
-        <table v-if="ruirs.length !== 0" class="table table-hover">
+        <table v-if="riurs !== null" class="table table-hover">
             <thead>
               <tr>
                 <th scope="col" v-for="header in headersСandidats" :key="header.id">
@@ -15,14 +15,13 @@
               </tr>
             </thead>
             <tbody>
-
-              <tr v-for="ruir in ruirs" :key="ruir.id">
-                <td>{{ruir.firstName}}</td>
-                <td>{{ruir.secondName}}</td>
-                <td>{{ruir.lastName}}</td>
-                <td>{{ruir.DOB}}</td>
-                <td>{{ruir.placeBirth}}</td>
-                <td>{{ruir.placeLive}}</td>
+              <tr v-for="riur in riurs" :key="riur.id">
+                <td>{{riur.firstName}}</td>
+                <td>{{riur.secondName}}</td>
+                <td>{{riur.lastName}}</td>
+                <td>{{riur.DOB}}</td>
+                <td>{{riur.placeBirth}}</td>
+                <td>{{riur.placeLive}}</td>
               </tr>
             </tbody>
         </table>
@@ -30,34 +29,37 @@
 </template>
 <script>
 export default {
-    name:'ruir',
+    name:'riur',
     components: {
     },
     props:{},
     data() {
         return{
           headersСandidats: ['Имя', 'Фамилия', 'Отчество', 'Дата рождения', 'Место рождения','Адрес места жительства'],
-          ruirs:[],
+          riurs:[],
           noData: false
         }
     },
     computed: {},
     methods: {
-        //Получение данных из РУИР
-        async getRuirs(){
+        async getRiurs(){
             var riur = localStorage.getItem('riur');
-            this.ruirs = JSON.parse(riur)
+            this.riurs = JSON.parse(riur);
+            if(this.riurs === null){
+                this.noData = true;
+            }
+            fetch('http://localhost:3000/candidates');
         }
     },
     mounted() {
-      this.getRuirs();
+      this.getRiurs();
     },
     //Изменение title в зависимости от страницы
     watch: {
         $route: {
             immediate: true,
             handler(to) {
-                document.title = to.meta.title || 'РУИР';
+                document.title = to.meta.title || 'РИУР';
             }
         },
     }

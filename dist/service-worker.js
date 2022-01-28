@@ -1,7 +1,7 @@
-importScripts("/precache-manifest.cd63f8b43ca2cb6f63e8a3344cb112db.js", "https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
+importScripts("/precache-manifest.331b40876ae95ab70f6c00765b043adc.js", "https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
 
 workbox.setConfig({
-  debug: true
+  debug: false
 });
 
 workbox.core.setCacheNameDetails({prefix: "app"});
@@ -42,6 +42,40 @@ self.addEventListener('fetch', (event) => {
       );*/
       return networkResponse;
     }());  
+  }
+
+  if (event.request.url === 'http://localhost:3000/candidates' && event.request.method === 'POST') {
+    let clonedBody = event.request.clone().json();
+    clonedBody.then((result) => {
+      obj = JSON.parse(JSON.stringify(result));
+      
+      fetch(`http://localhost:3000/riurs?secondName=${obj.secondName}&firstName=${obj.firstName}&lastName=${obj.lastName}&DOB=${obj.DOB}&placeBirth=${obj.placeBirth}`)
+      .then(async response => {
+        let data = await response.json();
+        //console.log(data);
+        if (data.length !== 0) {
+            const channel = new BroadcastChannel('sw-messages');
+            channel.postMessage({title: 'updateRiur', body: data});
+        }  
+      });
+    });
+  }
+
+  if (event.request.url.match('http:\/\/localhost:3000\/candidates\/.+') && event.request.method === 'PUT') {
+    let clonedBody = event.request.clone().json();
+    clonedBody.then((result) => {
+      obj = JSON.parse(JSON.stringify(result));
+      
+      fetch(`http://localhost:3000/riurs?secondName=${obj.secondName}&firstName=${obj.firstName}&lastName=${obj.lastName}&DOB=${obj.DOB}&placeBirth=${obj.placeBirth}`)
+      .then(async response => {
+        let data = await response.json();
+        //console.log(data);
+        if (data.length !== 0) {
+            const channel = new BroadcastChannel('sw-messages');
+            channel.postMessage({title: 'updateRiur', body: data});
+        }
+      });
+    });
   }
   
   if (event.request.method === 'GET') {
@@ -91,6 +125,7 @@ async function updateMobileVoter() {
 
     const channel = new BroadcastChannel('sw-messages');
     channel.postMessage({title: 'MV'});
+
   }
   catch{
     console.log(error);

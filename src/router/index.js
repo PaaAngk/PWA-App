@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import candidate from'../components/candidate.vue';
-import ruir from'../components/ruir.vue';
+import riur from'../components/riur.vue';
 import mobileVoter from'../components/mobile-voter.vue';
 
 
@@ -10,8 +10,8 @@ const routes = [
     component: candidate
 },
 {
-    path: '/ruir',
-    component: ruir
+    path: '/riur',
+    component: riur
 },
 {
     path: '/mobile-voter',
