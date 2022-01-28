@@ -42,6 +42,7 @@ export default {
     },
     computed: {},
     methods: {
+        //Получение сохраненных кандидатов имеющихся в РИУР 
         async getRiurs(){
             var riur = localStorage.getItem('riur');
             this.riurs = JSON.parse(riur);

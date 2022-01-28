@@ -45,6 +45,7 @@ export default {
         
     },
     methods: {
+        //Метод для удаление дубликатов в массиве
         removeDuplicates(arr) {
             const result = [];
             const duplicatesIndices = [];
@@ -83,6 +84,7 @@ export default {
             this.seenOffline = false;
         }); 
 
+        //Работа SW с local storage
         const channel = new BroadcastChannel('sw-messages');
         channel.addEventListener('message', event => {         
             if(event.data.title === "updateRiur"){

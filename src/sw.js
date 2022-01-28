@@ -2,20 +2,21 @@ workbox.setConfig({
   debug: false
 });
 
+//Префикс для кэша 
 workbox.core.setCacheNameDetails({prefix: "app"});
 
+//Кэширования файлов для работы приложения офлайн 
 self.__precacheManifest = [].concat(self.__precacheManifest || []);
 workbox.precaching.precacheAndRoute(self.__precacheManifest, {});
 
-
-//Перезагузка всех окон для отображения новых данных
+//skipWaiting всех окон для обновления SW
 self.addEventListener('message', (event) => {
   if (event.data.action === 'SKIP_WAITING') {
     self.skipWaiting();
   }
 });
 
-
+//Регистрация маршрутизации кандидатов
 workbox.routing.registerRoute(
   "http://localhost:3000/candidates",
   new workbox.strategies.StaleWhileRevalidate({
@@ -26,27 +27,18 @@ workbox.routing.registerRoute(
   })
 );
 
-//Такие запросы записываются в IndexedDB и извлекаются из нее при восстановлении соединения.
-const queue = new workbox.backgroundSync.Queue('QueuePWA') // использоваться для хранения провалившихся запросов
-self.addEventListener('fetch', (event) => {
-  if (event.request.url === 'http://localhost:3000/mobileVoter') {
-    event.respondWith(async function() {
-      const cache = await caches.open('mobileVoter');
-      const cachedResponse = await cache.match(event.request);
-      if (cachedResponse) return cachedResponse;
-      const networkResponse = await fetch(event.request);
-      /*event.waitUntil(
-        cache.put(event.request, networkResponse.clone())
-      );*/
-      return networkResponse;
-    }());  
-  }
+//Queue ипользуется для хранения провалившихся запросов. Такие запросы записываются в IndexedDB и извлекаются(отправляются) из нее при восстановлении соединения. 
+const queue = new workbox.backgroundSync.Queue('QueuePWA') 
 
+//Слушатель события отправления данных на сервер. Для перехвата запроса
+self.addEventListener('fetch', (event) => {
+  //Просмотр запроса добавления кандидата и проверка присутствия его в РИУР. Если запись нашлась, то сохраняется в локальном хранилище РИУР
   if (event.request.url === 'http://localhost:3000/candidates' && event.request.method === 'POST') {
-    let clonedBody = event.request.clone().json();
+    let clonedBody = event.request.clone().json();//Копирование запроса для работы с ним
     clonedBody.then((result) => {
       obj = JSON.parse(JSON.stringify(result));
       
+      //Попытка получение записи из РИУР по всем реквизитам кроме места жительства, в случае успешного получения - кэширование его
       fetch(`http://localhost:3000/riurs?secondName=${obj.secondName}&firstName=${obj.firstName}&lastName=${obj.lastName}&DOB=${obj.DOB}&placeBirth=${obj.placeBirth}`)
       .then(async response => {
         let data = await response.json();
@@ -59,11 +51,13 @@ self.addEventListener('fetch', (event) => {
     });
   }
 
+  //Просмотр запроса изменения кандидата и проверка присутствия его в РИУР. Если запись нашлась, то сохраняется в локальном хранилище РИУР
   if (event.request.url.match('http:\/\/localhost:3000\/candidates\/.+') && event.request.method === 'PUT') {
-    let clonedBody = event.request.clone().json();
+    let clonedBody = event.request.clone().json();//Копирование запроса для работы с ним
     clonedBody.then((result) => {
       obj = JSON.parse(JSON.stringify(result));
       
+      //Попытка получение записи из РИУР по всем реквизитам кроме места жительства, в случае успешного получения - кэширование его
       fetch(`http://localhost:3000/riurs?secondName=${obj.secondName}&firstName=${obj.firstName}&lastName=${obj.lastName}&DOB=${obj.DOB}&placeBirth=${obj.placeBirth}`)
       .then(async response => {
         let data = await response.json();
@@ -75,38 +69,56 @@ self.addEventListener('fetch', (event) => {
       });
     });
   }
+
+  //Получение данных Мобильный избиратель из кэше, при наличии, в обратном случае - выполняется запрос на сервер
+  if (event.request.url === 'http://localhost:3000/mobileVoter') {
+    event.respondWith(async function() {
+      const cache = await caches.open('mobileVoter');
+      const cachedResponse = await cache.match(event.request);
+      if (cachedResponse) return cachedResponse;
+      const networkResponse = await fetch(event.request);
+      return networkResponse;
+    }());  
+  }
   
+  //Пропуск GET запроса
   if (event.request.method === 'GET') {
     return;
   }
 
+  //Попытка передачи данных. При отсутствие связи - сохранение в IndexedDB и вывод уведомления
   const bgSyncLogic = async () => {
     try {
       const response = await fetch(event.request.clone());
       return response;
     } catch (error) {
       self.registration.showNotification("Данные сохранены для отправки при появлении сети!");
+      //Добавление запроса в промежуточный буфер для отправки при появление сети
       await queue.pushRequest({request: event.request});
       return error;
     }
   };
 
+  //Обещание вернуть ответ запроса и вызов функции фоновой синхронизации 
   event.respondWith(bgSyncLogic());
 });
 
+//Слушатель события синхронизации, отсылаемого браузером при появление интернета. Показ уведомление об успешной передачи данных и обновление кандидатов
 self.addEventListener('sync', function(event) {
   self.registration.showNotification("Данные отправлены!");
   event.waitUntil(updateCandidate());
 });
 
+//Обновление закэшированного списка кандидатов 
 async function updateCandidate(){
   const response = await fetch('http://localhost:3000/candidates');
+  //Открытие кэша и добавление запроса в кэш
   const cacheC = await caches.open('app-candidates');
   cacheC.put(response.url, response)
 }
 
 
-//periodic sync
+//Слушатель события периодического обновления, вызывающий метод получения данных Мобильный избиратель
 self.addEventListener('periodicsync', (event) => {
   if (event.tag === 'mobileVoter-bgsync') {
     console.log('Fetching mobile voter in the background!');
@@ -114,16 +126,18 @@ self.addEventListener('periodicsync', (event) => {
   }
 });
 
+//Метод получения и сохранения данных Мобильный избиратель
 async function updateMobileVoter() {
   try{
     const response = await fetch('http://localhost:3000/mobileVoter');
+
+    //Открытие кэша и добавление запроса в кэш
     const MVCache = await caches.open('mobileVoter');
     MVCache.put(response.url, response);
     self.registration.showNotification("Записи мобильный избиратель синхронизированы!")
-
+    //BroadcastChannel для передачи данных на клиента с целью их сохранения
     const channel = new BroadcastChannel('sw-messages');
     channel.postMessage({title: 'MV'});
-
   }
   catch{
     console.log(error);
@@ -132,13 +146,7 @@ async function updateMobileVoter() {
   
 };
 
-
-
-
-self.addEventListener('push', (event) => {
-  self.registration.showNotification("Hello from the Service Worker!");
-});
-
+//Слушатель события нажатия на уведомление для открытия той страницы с которой пришло уведомления
 self.addEventListener('notificationclick', function (event) {
   event.notification.close();
 
@@ -154,31 +162,3 @@ self.addEventListener('notificationclick', function (event) {
           return clients.openWindow('/');
   }));
 });
-
-
-// let click_open_url;
-// self.addEventListener("push", function(event){
-//     let pushMessage = event.data.text();
-//     click_open_url = "google.com";
-//     const options = {
-//         body: pushMessage.body, 
-//     };
-//     self.registration.showNotification("Pwa app notification", options)
-// });
-
-// function showNotification() {
-//   Notification.requestPermission(function(result) {
-//     if (result === 'granted') {
-//       navigator.serviceWorker.ready.then(function(registration) {
-//         registration.showNotification('Vibration Sample', {
-//           body: 'Buzz! Buzz!',
-//           icon: '../images/touch/chrome-touch-icon-192x192.png',
-//           vibrate: [200, 100, 200, 100, 200, 100, 200],
-//           tag: 'vibration-sample'
-//         });
-//       });
-//     }
-//   });
-// }
-
-
